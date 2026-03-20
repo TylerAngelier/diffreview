@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diff Review</title>
+  <style>
+    :root {
+      --bg: #1e1e2e;
+      --surface: #181825;
+      --surface2: #11111b;
+      --border: #313244;
+      --text: #cdd6f4;
+      --text-dim: #6c7086;
+      --text-bright: #f5f5f5;
+      --accent: #89b4fa;
+      --accent2: #a6e3a1;
+      --red: #f38ba8;
+      --green: #a6e3a1;
+      --yellow: #f9e2af;
+      --orange: #fab387;
+      --comment-bg: #313244;
+      --hover: #45475a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-header .project-name {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .file-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .file-item:hover { background: var(--hover); }
+    .file-item.active { background: var(--border); }
+
+    .file-item .icon {
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .file-item .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-item .stats {
+      font-size: 11px;
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+    }
+
+    .stat-add { color: var(--green); }
+    .stat-del { color: var(--red); }
+
+    .file-item .comment-badge {
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      color: var(--surface);
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-export {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      color: var(--surface);
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-export:hover { opacity: 0.85; }
+    .btn-export:disabled { opacity: 0.4; cursor: default; }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .toolbar .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-bright);
+    }
+
+    .toolbar .hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    .diff-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
+    .diff-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+
+    .diff-table th {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 500;
+      text-align: left;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+      user-select: none;
+    }
+
+    .diff-line {
+      border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+    }
+
+    .diff-line:hover { background: rgba(69, 71, 90, 0.4); }
+    .diff-line.insert { background: rgba(166, 227, 161, 0.08); }
+    .diff-line.insert:hover { background: rgba(166, 227, 161, 0.15); }
+    .diff-line.delete { background: rgba(243, 139, 168, 0.08); }
+    .diff-line.delete:hover { background: rgba(243, 139, 168, 0.15); }
+    .diff-line.selecting { background: rgba(137, 180, 250, 0.15) !important; }
+
+    .diff-line td {
+      padding: 0 12px;
+      vertical-align: top;
+      white-space: pre;
+    }
+
+    .diff-line .line-num {
+      width: 50px;
+      min-width: 50px;
+      text-align: right;
+      color: var(--text-dim);
+      user-select: none;
+      padding-right: 8px;
+      cursor: pointer;
+    }
+
+    .diff-line .line-num:hover { color: var(--accent); }
+
+    .diff-line .line-content {
+      width: 100%;
+    }
+
+    .diff-line .prefix {
+      display: inline-block;
+      width: 16px;
+      user-select: none;
+      color: var(--text-dim);
+    }
+
+    .diff-line.insert .prefix { color: var(--green); }
+    .diff-line.delete .prefix { color: var(--red); }
+
+    .hunk-header {
+      background: var(--surface);
+      color: var(--accent);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .hunk-header td { padding: 4px 12px; }
+
+    .comments-panel {
+      width: 360px;
+      min-width: 360px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .comments-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    .comments-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .comment-card {
+      background: var(--comment-bg);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+
+    .comment-card .comment-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .comment-card .comment-meta .file-tag {
+      background: var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+
+    .comment-card .comment-code {
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
+      font-size: 11px;
+      background: var(--surface2);
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      color: var(--yellow);
+      overflow-x: auto;
+      white-space: pre;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .comment-card .comment-text {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .comment-card .comment-actions {
+      margin-top: 6px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .comment-card .comment-actions button {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 2px 4px;
+    }
+
+    .comment-card .comment-actions button:hover { color: var(--red); }
+
+    .new-comment-form {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .new-comment-form .selection-info {
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      padding: 6px 8px;
+      background: var(--comment-bg);
+      border-radius: 4px;
+    }
+
+    .new-comment-form textarea {
+      width: 100%;
+      min-height: 80px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+    }
+
+    .new-comment-form textarea:focus { border-color: var(--accent); }
+
+    .new-comment-form .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .new-comment-form .btn {
+      padding: 6px 14px;
+      border-radius: 5px;
+      border: none;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: var(--accent); color: var(--surface); }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: var(--hover); }
+
+    .btn-file-comment { margin-left: auto; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 640px;
+      max-width: 90vw;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h2 { font-size: 15px; font-weight: 600; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+    }
+
+    .modal-body pre {
+      background: var(--surface2);
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
+    }
+
+    .modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-dim);
+      gap: 12px;
+    }
+
+    .empty-state svg { width: 48px; height: 48px; opacity: 0.4; }
+    .empty-state p { font-size: 13px; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--green);
+      color: var(--surface);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 200;
+    }
+
+    .toast.show { opacity: 1; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--hover); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>Diff Review</h1>
+        <div class="project-name" id="projectName"></div>
+      </div>
+      <div class="file-list" id="fileList"></div>
+      <div class="sidebar-footer">
+        <button class="btn-export" id="btnExport" disabled>
+          Export Review (<span id="commentCount">0</span>)
+        </button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="toolbar">
+        <span class="file-name" id="currentFile">Select a file</span>
+        <span class="hint" id="hint">Click or shift-click lines to comment</span>
+      </div>
+      <div class="diff-container" id="diffContainer">
+        <div class="empty-state" id="emptyState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <p>Select a file from the sidebar to review</p>
+        </div>
+        <table class="diff-table" id="diffTable" style="display:none">
+          <thead>
+            <tr>
+              <th class="line-num" style="width:50px">-</th>
+              <th class="line-num" style="width:50px">+</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="diffBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="comments-panel">
+      <div class="comments-header">Comments</div>
+      <div class="comments-list" id="commentsList">
+        <div class="empty-state" id="commentsEmpty">
+          <p>No comments yet</p>
+        </div>
+      </div>
+      <div class="new-comment-form" id="commentForm" style="display:none">
+        <div class="selection-info" id="selectionInfo"></div>
+        <textarea id="commentText" placeholder="Write your review comment... (Ctrl+Enter to submit)"></textarea>
+        <div class="form-actions">
+          <button class="btn btn-secondary" id="btnCancel">Cancel</button>
+          <button class="btn btn-primary" id="btnSubmit" disabled>Comment</button>
+          <button class="btn btn-secondary btn-file-comment" id="btnFileComment">File comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Review Export</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre id="exportContent"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCopyExport">Copy to Clipboard</button>
+        <button class="btn btn-primary" id="btnCloseModal">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let files = [];
+    let comments = [];
+    let currentFileIndex = -1;
+    let selection = null;
+    let lastClickedIdx = null;
+
+    async function init() {
+      const res = await fetch("/api/files");
+      const data = await res.json();
+      files = data.files;
+      document.getElementById("projectName").textContent = data.projectName;
+      renderFileList();
+      await loadComments();
+    }
+
+    function renderFileList() {
+      const list = document.getElementById("fileList");
+      list.innerHTML = "";
+      files.forEach((file, i) => {
+        const div = document.createElement("div");
+        div.className = "file-item" + (i === currentFileIndex ? " active" : "");
+        const name = file.newName !== "/dev/null" ? file.newName : file.oldName;
+        const icon = file.deleted ? "\u2716" : file.added ? "\u271A" : "\u270E";
+        const commentCount = comments.filter(c => c.file === name).length;
+        div.innerHTML = `
+          <span class="icon">${icon}</span>
+          <span class="name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+          <span class="stats">
+            <span class="stat-add">+${file.stats.additions}</span>
+            <span class="stat-del">-${file.stats.deletions}</span>
+          </span>
+          ${commentCount ? `<span class="comment-badge">${commentCount}</span>` : ""}
+        `;
+        div.addEventListener("click", () => selectFile(i));
+        list.appendChild(div);
+      });
+    }
+
+    function selectFile(index) {
+      currentFileIndex = index;
+      clearSelection();
+      lastClickedIdx = null;
+      renderFileList();
+      renderDiff();
+      const name = files[index].newName !== "/dev/null" ? files[index].newName : files[index].oldName;
+      document.getElementById("currentFile").textContent = name;
+      document.getElementById("hint").textContent = "Click or shift-click lines to comment";
+      renderCommentsForFile(name);
+    }
+
+    function renderDiff() {
+      const file = files[currentFileIndex];
+      const tbody = document.getElementById("diffBody");
+      const table = document.getElementById("diffTable");
+      const empty = document.getElementById("emptyState");
+
+      if (!file) {
+        table.style.display = "none";
+        empty.style.display = "flex";
+        return;
+      }
+
+      table.style.display = "table";
+      empty.style.display = "none";
+      tbody.innerHTML = "";
+
+      let idx = 0;
+      for (const hunk of file.hunks) {
+        const hunkRow = document.createElement("tr");
+        hunkRow.className = "hunk-header";
+        hunkRow.innerHTML = `<td colspan="3">${escapeHtml(hunk.header)}</td>`;
+        tbody.appendChild(hunkRow);
+
+        for (const line of hunk.lines) {
+          const tr = document.createElement("tr");
+          tr.className = "diff-line " + (line.type === "insert" ? "insert" : line.type === "delete" ? "delete" : "");
+          tr.dataset.idx = idx;
+          tr.dataset.type = line.type;
+          tr.dataset.oldNum = line.oldNumber ?? "";
+          tr.dataset.newNum = line.newNumber ?? "";
+
+          const prefix = line.type === "insert" ? "+" : line.type === "delete" ? "-" : " ";
+
+          tr.innerHTML = `
+            <td class="line-num">${line.oldNumber ?? ""}</td>
+            <td class="line-num">${line.newNumber ?? ""}</td>
+            <td class="line-content"><span class="prefix">${prefix}</span>${escapeHtml(line.content)}</td>
+          `;
+
+          const nums = tr.querySelectorAll(".line-num");
+          nums.forEach(td => {
+            td.addEventListener("click", (e) => {
+              e.preventDefault();
+              onLineClick(e, idx);
+            });
+            td.addEventListener("mousedown", (e) => {
+              if (e.shiftKey) return;
+              if (e.button !== 0) return;
+              e.preventDefault();
+              isDragging = true;
+              dragStartIdx = idx;
+              updateSelectionHighlight(idx, idx);
+              updateSelectionFromHighlight();
+            });
+          });
+
+          tbody.appendChild(tr);
+          idx++;
+        }
+      }
+    }
+
+    let isDragging = false;
+    let dragStartIdx = null;
+
+    function onLineClick(e, idx) {
+      if (e.shiftKey && lastClickedIdx !== null) {
+        updateSelectionHighlight(lastClickedIdx, idx);
+        updateSelectionFromHighlight();
+      } else {
+        lastClickedIdx = idx;
+        updateSelectionHighlight(idx, idx);
+        updateSelectionFromHighlight();
+      }
+    }
+
+    document.getElementById("diffBody").addEventListener("mouseover", (e) => {
+      if (!isDragging) return;
+      const tr = e.target.closest("tr.diff-line");
+      if (!tr) return;
+      const idx = parseInt(tr.dataset.idx);
+      updateSelectionHighlight(dragStartIdx, idx);
+      updateSelectionFromHighlight();
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!isDragging) return;
+      isDragging = false;
+    });
+
+    function updateSelectionHighlight(startIdx, endIdx) {
+      document.querySelectorAll(".diff-line.selecting").forEach(el => el.classList.remove("selecting"));
+      const minIdx = Math.min(startIdx, endIdx);
+      const maxIdx = Math.max(startIdx, endIdx);
+      document.querySelectorAll(".diff-line").forEach(tr => {
+        const idx = parseInt(tr.dataset.idx);
+        if (idx >= minIdx && idx <= maxIdx) {
+          tr.classList.add("selecting");
+        }
+      });
+    }
+
+    function updateSelectionFromHighlight() {
+      const file = files[currentFileIndex];
+      if (!file) return;
+
+      const selectedRows = document.querySelectorAll(".diff-line.selecting");
+      if (selectedRows.length === 0) return;
+
+      const selectedLines = [];
+      let side = null;
+
+      selectedRows.forEach(tr => {
+        const type = tr.dataset.type;
+        if (type !== "context") {
+          selectedLines.push({ type, content: tr.dataset.content });
+          const s = type === "delete" ? "old" : "new";
+          if (side === null) side = s;
+        }
+      });
+
+      if (selectedLines.length === 0) return;
+
+      const numField = side === "old" ? "oldNum" : "newNum";
+      const firstNum = parseInt(selectedRows[0].dataset[numField]);
+      const lastNum = parseInt(selectedRows[selectedRows.length - 1].dataset[numField]);
+
+      const codeSnippet = selectedLines
+        .map(l => (l.type === "insert" ? "+" : l.type === "delete" ? "-" : " ") + l.content)
+        .join("\n");
+
+      const name = file.newName !== "/dev/null" ? file.newName : file.oldName;
+
+      selection = {
+        file: name,
+        side,
+        type: selectedLines.length === 1 ? "line" : "range",
+        line: selectedLines.length === 1 ? firstNum : undefined,
+        startLine: selectedLines.length > 1 ? firstNum : undefined,
+        endLine: selectedLines.length > 1 ? lastNum : undefined,
+        codeSnippet,
+      };
+
+      showCommentForm();
+    }
+
+    function clearSelection() {
+      selection = null;
+      isDragging = false;
+      dragStartIdx = null;
+      document.querySelectorAll(".diff-line.selecting").forEach(el => el.classList.remove("selecting"));
+      document.getElementById("commentForm").style.display = "none";
+    }
+
+    function showCommentForm() {
+      const form = document.getElementById("commentForm");
+      form.style.display = "block";
+      const info = document.getElementById("selectionInfo");
+
+      if (selection.type === "file") {
+        info.textContent = `File: ${selection.file}`;
+      } else if (selection.type === "range") {
+        info.textContent = `${selection.file}:${selection.startLine}\u2013${selection.endLine} (${selection.side})`;
+      } else {
+        info.textContent = `${selection.file}:${selection.line} (${selection.side})`;
+      }
+
+      document.getElementById("commentText").value = "";
+      document.getElementById("btnSubmit").disabled = true;
+      document.getElementById("commentText").focus();
+    }
+
+    document.getElementById("commentText").addEventListener("input", (e) => {
+      document.getElementById("btnSubmit").disabled = !e.target.value.trim();
+    });
+
+    document.getElementById("commentText").addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        submitComment();
+      }
+    });
+
+    document.getElementById("btnCancel").addEventListener("click", clearSelection);
+
+    document.getElementById("btnFileComment").addEventListener("click", () => {
+      if (currentFileIndex < 0) return;
+      const file = files[currentFileIndex];
+      selection = {
+        file: file.newName !== "/dev/null" ? file.newName : file.oldName,
+        type: "file",
+        side: null,
+        line: undefined,
+        startLine: undefined,
+        endLine: undefined,
+        codeSnippet: "",
+      };
+      showCommentForm();
+    });
+
+    document.getElementById("btnSubmit").addEventListener("click", submitComment);
+
+    async function submitComment() {
+      const text = document.getElementById("commentText").value.trim();
+      if (!text || !selection) return;
+
+      const comment = { ...selection, text };
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(comment),
+      });
+      const data = await res.json();
+      comments.push(data.comment);
+
+      clearSelection();
+      renderFileList();
+      const name = files[currentFileIndex]?.newName !== "/dev/null" ? files[currentFileIndex]?.newName : files[currentFileIndex]?.oldName;
+      if (name) renderCommentsForFile(name);
+      updateCommentCount();
+      showToast("Comment added");
+    }
+
+    async function loadComments() {
+      const res = await fetch("/api/comments");
+      const data = await res.json();
+      comments = data.comments;
+      renderFileList();
+      updateCommentCount();
+    }
+
+    function renderCommentsForFile(fileName) {
+      const list = document.getElementById("commentsList");
+      const empty = document.getElementById("commentsEmpty");
+      const fileComments = comments.filter(c => c.file === fileName);
+
+      if (fileComments.length === 0) {
+        list.innerHTML = "";
+        list.appendChild(empty);
+        empty.style.display = "flex";
+        return;
+      }
+
+      empty.style.display = "none";
+      list.innerHTML = "";
+
+      for (const c of fileComments) {
+        const card = document.createElement("div");
+        card.className = "comment-card";
+
+        let metaText = "";
+        if (c.type === "file") {
+          metaText = "File comment";
+        } else if (c.type === "range") {
+          metaText = `Lines ${c.startLine}\u2013${c.endLine} (${c.side})`;
+        } else {
+          metaText = `Line ${c.line} (${c.side})`;
+        }
+
+        card.innerHTML = `
+          <div class="comment-meta">
+            <span class="file-tag">${escapeHtml(c.file.split("/").pop())}</span>
+            ${metaText}
+          </div>
+          ${c.codeSnippet ? `<div class="comment-code">${escapeHtml(c.codeSnippet)}</div>` : ""}
+          <div class="comment-text">${escapeHtml(c.text)}</div>
+          <div class="comment-actions">
+            <button data-id="${c.id}" class="btn-delete">Delete</button>
+          </div>
+        `;
+
+        card.querySelector(".btn-delete").addEventListener("click", async () => {
+          await fetch(`/api/comments?id=${c.id}`, { method: "DELETE" });
+          comments = comments.filter(x => x.id !== c.id);
+          renderCommentsForFile(fileName);
+          renderFileList();
+          updateCommentCount();
+          showToast("Comment deleted");
+        });
+
+        list.appendChild(card);
+      }
+    }
+
+    function updateCommentCount() {
+      const count = comments.length;
+      document.getElementById("commentCount").textContent = count;
+      document.getElementById("btnExport").disabled = count === 0;
+    }
+
+    document.getElementById("btnExport").addEventListener("click", async () => {
+      const res = await fetch("/api/export", { method: "POST" });
+      const data = await res.json();
+      document.getElementById("exportContent").textContent = data.markdown;
+      document.getElementById("exportModal").classList.add("show");
+    });
+
+    document.getElementById("btnCopyExport").addEventListener("click", async () => {
+      const text = document.getElementById("exportContent").textContent;
+      await navigator.clipboard.writeText(text);
+      showToast("Copied to clipboard");
+    });
+
+    document.getElementById("modalClose").addEventListener("click", () => {
+      document.getElementById("exportModal").classList.remove("show");
+    });
+
+    document.getElementById("btnCloseModal").addEventListener("click", () => {
+      document.getElementById("exportModal").classList.remove("show");
+    });
+
+    document.getElementById("exportModal").addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) {
+        document.getElementById("exportModal").classList.remove("show");
+      }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (document.getElementById("exportModal").classList.contains("show")) {
+          document.getElementById("exportModal").classList.remove("show");
+        } else {
+          clearSelection();
+        }
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
