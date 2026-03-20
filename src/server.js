@@ -84,6 +84,29 @@ export function createServer(files, projectName) {
           res.end(JSON.stringify({ error: "Missing or invalid 'type' field (must be 'line', 'range', or 'file')" }));
           return;
         }
+        // Validate line-specific fields
+        if (comment.type === "line") {
+          if (typeof comment.line !== "number" || !Number.isInteger(comment.line) || comment.line < 1) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Missing or invalid 'line' field (must be a positive integer)" }));
+            return;
+          }
+        }
+        if (comment.type === "range") {
+          if (typeof comment.startLine !== "number" || typeof comment.endLine !== "number" ||
+              !Number.isInteger(comment.startLine) || !Number.isInteger(comment.endLine) ||
+              comment.startLine < 1 || comment.endLine < comment.startLine) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid 'startLine' or 'endLine' fields (must be positive integers with startLine <= endLine)" }));
+            return;
+          }
+        }
+        // Validate side for non-file comments
+        if (comment.type !== "file" && comment.side !== "old" && comment.side !== "new") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid 'side' field (must be 'old' or 'new')" }));
+          return;
+        }
 
         comment.id = crypto.randomUUID();
         comments.push(comment);
@@ -94,6 +117,11 @@ export function createServer(files, projectName) {
 
       if (url.pathname === "/api/comments" && req.method === "DELETE") {
         const id = url.searchParams.get("id");
+        if (!id || typeof id !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing 'id' parameter" }));
+          return;
+        }
         const idx = comments.findIndex((c) => c.id === id);
         if (idx === -1) {
           res.writeHead(404, { "Content-Type": "application/json" });
@@ -155,7 +183,6 @@ function readBody(req) {
 }
 
 function exportToMarkdown(files, comments, projectName) {
-  const branch = "review";
   let md = `## Review: ${projectName}\n\n`;
 
   // Group comments by file

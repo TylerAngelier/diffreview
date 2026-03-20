@@ -629,7 +629,7 @@
       try {
         const res = await fetch("/api/files");
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
+        const data = await safeJson(res);
         files = data.files;
         document.getElementById("projectName").textContent = data.projectName;
         renderFileList();
@@ -1211,7 +1211,7 @@
           body: JSON.stringify(comment),
         });
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
+        const data = await safeJson(res);
         comments.push(data.comment);
 
         clearSelection();
@@ -1245,7 +1245,7 @@
       try {
         const res = await fetch("/api/comments");
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
+        const data = await safeJson(res);
         comments = data.comments;
         renderFileList();
         updateCommentCount();
@@ -1265,7 +1265,7 @@
       try {
         const res = await fetch("/api/export", { method: "POST" });
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
+        const data = await safeJson(res);
         document.getElementById("exportContent").textContent = data.markdown;
         document.getElementById("exportModal").classList.add("show");
       } catch (e) {
@@ -1302,11 +1302,23 @@
     }
 
     function escapeHtml(str) {
-      return str
+      if (str == null) return "";
+      return String(str)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/\//g, "&#x2F;");
+    }
+
+    async function safeJson(res) {
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error("Invalid JSON response from server");
+      }
     }
 
     document.addEventListener("keydown", (e) => {
