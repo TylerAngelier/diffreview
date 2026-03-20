@@ -171,6 +171,20 @@
       margin-left: auto;
     }
 
+    .toolbar .btn-file-comment {
+      padding: 4px 10px;
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .toolbar .btn-file-comment:hover { background: var(--hover); }
+
     .diff-container {
       flex: 1;
       overflow: auto;
@@ -224,9 +238,23 @@
       user-select: none;
       padding-right: 8px;
       cursor: pointer;
+      position: relative;
     }
 
     .diff-line .line-num:hover { color: var(--accent); }
+
+    /* Gutter comment indicator */
+    .diff-line.has-comment .line-num::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
 
     .diff-line .line-content {
       width: 100%;
@@ -251,34 +279,33 @@
 
     .hunk-header td { padding: 4px 12px; }
 
-    .comments-panel {
-      width: 360px;
-      min-width: 360px;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
+    /* Inline comment thread row */
+    .comment-thread td {
+      padding: 0;
+      background: var(--bg);
+    }
+
+    .inline-comment {
       display: flex;
-      flex-direction: column;
+      padding: 8px 16px 12px 40px;
+      gap: 0;
     }
 
-    .comments-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-bright);
-    }
-
-    .comments-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
+    .comment-connector {
+      width: 28px;
+      min-width: 28px;
+      border-left: 2px solid var(--accent);
+      margin-left: 24px;
+      border-bottom-left-radius: 6px;
+      opacity: 0.6;
     }
 
     .comment-card {
+      flex: 1;
       background: var(--comment-bg);
       border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
+      padding: 10px 14px;
+      max-width: 720px;
     }
 
     .comment-card .comment-meta {
@@ -288,6 +315,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .comment-card .comment-meta .file-tag {
@@ -314,6 +342,7 @@
     .comment-card .comment-text {
       font-size: 13px;
       line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .comment-card .comment-actions {
@@ -333,45 +362,76 @@
 
     .comment-card .comment-actions button:hover { color: var(--red); }
 
-    .new-comment-form {
-      padding: 12px;
+    /* Stacked comments in a thread */
+    .comment-card + .comment-card {
+      margin-top: 6px;
       border-top: 1px solid var(--border);
-      background: var(--surface2);
+      padding-top: 8px;
     }
 
-    .new-comment-form .selection-info {
+    /* Inline comment form */
+    .inline-form td {
+      padding: 0;
+      background: var(--bg);
+    }
+
+    .inline-comment-form {
+      display: flex;
+      padding: 8px 16px 12px 40px;
+      gap: 0;
+    }
+
+    .form-connector {
+      width: 28px;
+      min-width: 28px;
+      border-left: 2px solid var(--accent);
+      margin-left: 24px;
+      border-bottom-left-radius: 6px;
+      opacity: 0.6;
+    }
+
+    .form-card {
+      flex: 1;
+      background: var(--comment-bg);
+      border-radius: 8px;
+      padding: 10px 14px;
+      max-width: 720px;
+    }
+
+    .form-card .selection-info {
       font-size: 11px;
       color: var(--accent);
       margin-bottom: 8px;
-      padding: 6px 8px;
-      background: var(--comment-bg);
+      padding: 4px 8px;
+      background: var(--surface2);
       border-radius: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
-    .new-comment-form textarea {
+    .form-card textarea {
       width: 100%;
-      min-height: 80px;
+      min-height: 60px;
       background: var(--bg);
       color: var(--text);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 10px;
+      padding: 8px 10px;
       font-size: 13px;
-      font-family: inherit;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       resize: vertical;
       outline: none;
     }
 
-    .new-comment-form textarea:focus { border-color: var(--accent); }
+    .form-card textarea:focus { border-color: var(--accent); }
 
-    .new-comment-form .form-actions {
+    .form-card .form-actions {
       display: flex;
       gap: 8px;
       margin-top: 8px;
     }
 
-    .new-comment-form .btn {
-      padding: 6px 14px;
+    .form-card .btn {
+      padding: 5px 12px;
       border-radius: 5px;
       border: none;
       font-size: 12px;
@@ -385,8 +445,6 @@
 
     .btn-secondary { background: var(--border); color: var(--text); }
     .btn-secondary:hover { background: var(--hover); }
-
-    .btn-file-comment { margin-left: auto; }
 
     .modal-overlay {
       display: none;
@@ -513,6 +571,7 @@
       <div class="toolbar">
         <span class="file-name" id="currentFile">Select a file</span>
         <span class="hint" id="hint">Click or shift-click lines to comment</span>
+        <button class="btn-file-comment" id="btnFileComment" style="display:none">File comment</button>
       </div>
       <div class="diff-container" id="diffContainer">
         <div class="empty-state" id="emptyState">
@@ -531,24 +590,6 @@
           </thead>
           <tbody id="diffBody"></tbody>
         </table>
-      </div>
-    </div>
-
-    <div class="comments-panel">
-      <div class="comments-header">Comments</div>
-      <div class="comments-list" id="commentsList">
-        <div class="empty-state" id="commentsEmpty">
-          <p>No comments yet</p>
-        </div>
-      </div>
-      <div class="new-comment-form" id="commentForm" style="display:none">
-        <div class="selection-info" id="selectionInfo"></div>
-        <textarea id="commentText" placeholder="Write your review comment... (Ctrl+Enter to submit)"></textarea>
-        <div class="form-actions">
-          <button class="btn btn-secondary" id="btnCancel">Cancel</button>
-          <button class="btn btn-primary" id="btnSubmit" disabled>Comment</button>
-          <button class="btn btn-secondary btn-file-comment" id="btnFileComment">File comment</button>
-        </div>
       </div>
     </div>
   </div>
@@ -572,19 +613,31 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    (function() {
+    "use strict";
+
     let files = [];
     let comments = [];
     let currentFileIndex = -1;
     let selection = null;
     let lastClickedIdx = null;
 
+    // Track line index -> (side, lineNum) mapping for comment placement
+    let lineMap = [];
+
     async function init() {
-      const res = await fetch("/api/files");
-      const data = await res.json();
-      files = data.files;
-      document.getElementById("projectName").textContent = data.projectName;
-      renderFileList();
-      await loadComments();
+      try {
+        const res = await fetch("/api/files");
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+        files = data.files;
+        document.getElementById("projectName").textContent = data.projectName;
+        renderFileList();
+        await loadComments();
+      } catch (e) {
+        console.error("Failed to load files:", e);
+        showToast("Failed to load files: " + e.message);
+      }
     }
 
     function renderFileList() {
@@ -619,7 +672,67 @@
       const name = files[index].newName !== "/dev/null" ? files[index].newName : files[index].oldName;
       document.getElementById("currentFile").textContent = name;
       document.getElementById("hint").textContent = "Click or shift-click lines to comment";
-      renderCommentsForFile(name);
+      document.getElementById("btnFileComment").style.display = "";
+    }
+
+    function getCommentsForFile(fileName) {
+      return comments.filter(c => c.file === fileName);
+    }
+
+    // Build a map of line indices that have comments, keyed by comment range key
+    function buildCommentIndex(fileComments) {
+      // Map from "side:startLine" or "side:startLine-endLine" -> [comments]
+      const idx = new Map();
+      for (const c of fileComments) {
+        if (c.type === "file") continue;
+        let key;
+        if (c.type === "range") {
+          key = `${c.side}:${c.startLine}-${c.endLine}`;
+        } else {
+          key = `${c.side}:${c.line}`;
+        }
+        if (!idx.has(key)) idx.set(key, []);
+        idx.get(key).push(c);
+      }
+      return idx;
+    }
+
+    // Find the last line index in the diff table that matches a comment's target
+    function findLineIdxForComment(comment) {
+      for (let i = lineMap.length - 1; i >= 0; i--) {
+        const entry = lineMap[i];
+        if (comment.side === "old" && entry.oldNum != null && entry.oldNum !== "") {
+          if (comment.type === "line" && parseInt(entry.oldNum) === comment.line) return i;
+          if (comment.type === "range" && parseInt(entry.oldNum) >= comment.startLine && parseInt(entry.oldNum) <= comment.endLine) {
+            // Return the last matching line
+            return i;
+          }
+        }
+        if (comment.side === "new" && entry.newNum != null && entry.newNum !== "") {
+          if (comment.type === "line" && parseInt(entry.newNum) === comment.line) return i;
+          if (comment.type === "range" && parseInt(entry.newNum) >= comment.startLine && parseInt(entry.newNum) <= comment.endLine) {
+            return i;
+          }
+        }
+      }
+      return -1;
+    }
+
+    // Get the last line index for a range comment (the line after which to insert)
+    function findLastLineIdxForRange(side, startLine, endLine) {
+      let lastIdx = -1;
+      for (let i = 0; i < lineMap.length; i++) {
+        const entry = lineMap[i];
+        const numField = side === "old" ? "oldNum" : "newNum";
+        const num = entry[numField];
+        if (num != null && num !== "") {
+          const n = parseInt(num);
+          if (n >= startLine && n <= endLine) {
+            lastIdx = i;
+          }
+        }
+      }
+      return lastIdx;
     }
 
     function renderDiff() {
@@ -638,7 +751,54 @@
       empty.style.display = "none";
       tbody.innerHTML = "";
 
+      const fileName = file.newName !== "/dev/null" ? file.newName : file.oldName;
+      const fileComments = getCommentsForFile(fileName);
+      const commentIndex = buildCommentIndex(fileComments);
+      const fileLevelComments = fileComments.filter(c => c.type === "file");
+      const lineComments = fileComments.filter(c => c.type !== "file");
+
+      lineMap = [];
+
+      // Insert file-level comments at the top
+      if (fileLevelComments.length > 0) {
+        tbody.appendChild(createInlineCommentThread(fileLevelComments, fileName));
+      }
+
+      // Group line comments by their insertion point (the last line index they target)
+      const insertionPoints = new Map(); // lineIdx -> [comments]
+      for (const c of lineComments) {
+        const lineIdx = findLastLineIdxForRange(c.side, c.startLine ?? c.line, c.endLine ?? c.line);
+        if (lineIdx >= 0) {
+          if (!insertionPoints.has(lineIdx)) insertionPoints.set(lineIdx, []);
+          insertionPoints.get(lineIdx).push(c);
+        }
+      }
+
+      // Track which line indices have comments for gutter indicators
+      const commentedLineIdxs = new Set();
+      for (const [li, cls] of insertionPoints) {
+        // Mark all lines in the range
+        const firstComment = cls[0];
+        const startLine = firstComment.startLine ?? firstComment.line;
+        const endLine = firstComment.endLine ?? firstComment.line;
+        const side = firstComment.side;
+        for (let i = 0; i < lineMap.length; i++) {
+          const entry = lineMap[i];
+          const numField = side === "old" ? "oldNum" : "newNum";
+          const num = entry[numField];
+          if (num != null && num !== "") {
+            const n = parseInt(num);
+            if (n >= startLine && n <= endLine) {
+              commentedLineIdxs.add(i);
+            }
+          }
+        }
+      }
+
+      // Rebuild lineMap and render diff lines with inline comments interleaved
+      lineMap = [];
       let idx = 0;
+
       for (const hunk of file.hunks) {
         const hunkRow = document.createElement("tr");
         hunkRow.className = "hunk-header";
@@ -652,6 +812,9 @@
           tr.dataset.type = line.type;
           tr.dataset.oldNum = line.oldNumber ?? "";
           tr.dataset.newNum = line.newNumber ?? "";
+
+          // Check if this line index has comments (for gutter indicator)
+          // We'll add this class after building the full lineMap
 
           const prefix = line.type === "insert" ? "+" : line.type === "delete" ? "-" : " ";
 
@@ -679,9 +842,106 @@
           });
 
           tbody.appendChild(tr);
+          lineMap.push({ oldNum: line.oldNumber ?? "", newNum: line.newNumber ?? "", type: line.type });
           idx++;
+
+          // After appending the line, check if we need to insert inline comments
+          if (insertionPoints.has(idx - 1)) {
+            const threadComments = insertionPoints.get(idx - 1);
+            tbody.appendChild(createInlineCommentThread(threadComments, fileName));
+          }
         }
       }
+
+      // Now add gutter indicators to commented lines
+      // Re-compute with the full lineMap
+      const allCommentedLines = new Set();
+      for (const c of lineComments) {
+        const startLine = c.startLine ?? c.line;
+        const endLine = c.endLine ?? c.line;
+        const side = c.side;
+        for (let i = 0; i < lineMap.length; i++) {
+          const entry = lineMap[i];
+          const numField = side === "old" ? "oldNum" : "newNum";
+          const num = entry[numField];
+          if (num != null && num !== "") {
+            const n = parseInt(num);
+            if (n >= startLine && n <= endLine) {
+              allCommentedLines.add(i);
+            }
+          }
+        }
+      }
+
+      document.querySelectorAll("#diffBody .diff-line").forEach(tr => {
+        const i = parseInt(tr.dataset.idx);
+        if (allCommentedLines.has(i)) {
+          tr.classList.add("has-comment");
+        }
+      });
+    }
+
+    function createInlineCommentThread(threadComments, fileName) {
+      const tr = document.createElement("tr");
+      tr.className = "comment-thread";
+
+      let cardsHtml = "";
+      for (const c of threadComments) {
+        let metaText = "";
+        if (c.type === "file") {
+          metaText = "File comment";
+        } else if (c.type === "range") {
+          metaText = `Lines ${c.startLine}\u2013${c.endLine} (${c.side})`;
+        } else {
+          metaText = `Line ${c.line} (${c.side})`;
+        }
+
+        cardsHtml += `
+          <div class="comment-card" data-comment-id="${c.id}">
+            <div class="comment-meta">
+              <span class="file-tag">${escapeHtml(fileName.split("/").pop())}</span>
+              ${metaText}
+            </div>
+            ${c.codeSnippet ? `<div class="comment-code">${escapeHtml(c.codeSnippet)}</div>` : ""}
+            <div class="comment-text">${escapeHtml(c.text)}</div>
+            <div class="comment-actions">
+              <button data-id="${c.id}" class="btn-delete">Delete</button>
+            </div>
+          </div>
+        `;
+      }
+
+      tr.innerHTML = `
+        <td colspan="3">
+          <div class="inline-comment">
+            <div class="comment-connector"></div>
+            <div>
+              ${cardsHtml}
+            </div>
+          </div>
+        </td>
+      `;
+
+      // Attach delete handlers
+      tr.querySelectorAll(".btn-delete").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          try {
+            const res = await fetch(`/api/comments?id=${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+            comments = comments.filter(x => x.id !== id);
+            renderFileList();
+            renderDiff();
+            updateCommentCount();
+            showToast("Comment deleted");
+          } catch (e) {
+            console.error("Failed to delete comment:", e);
+            showToast("Failed to delete comment: " + e.message);
+          }
+        });
+      });
+
+      return tr;
     }
 
     let isDragging = false;
@@ -763,9 +1023,10 @@
         startLine: selectedLines.length > 1 ? firstNum : undefined,
         endLine: selectedLines.length > 1 ? lastNum : undefined,
         codeSnippet,
+        insertAfterIdx: parseInt(selectedRows[selectedRows.length - 1].dataset.idx),
       };
 
-      showCommentForm();
+      showInlineForm();
     }
 
     function clearSelection() {
@@ -773,45 +1034,203 @@
       isDragging = false;
       dragStartIdx = null;
       document.querySelectorAll(".diff-line.selecting").forEach(el => el.classList.remove("selecting"));
-      document.getElementById("commentForm").style.display = "none";
+      removeInlineForm();
     }
 
-    function showCommentForm() {
-      const form = document.getElementById("commentForm");
-      form.style.display = "block";
-      const info = document.getElementById("selectionInfo");
+    function removeInlineForm() {
+      const existing = document.querySelector("#diffBody .inline-form");
+      if (existing) existing.remove();
+    }
 
-      if (selection.type === "file") {
-        info.textContent = `File: ${selection.file}`;
-      } else if (selection.type === "range") {
-        info.textContent = `${selection.file}:${selection.startLine}\u2013${selection.endLine} (${selection.side})`;
+    function showInlineForm() {
+      removeInlineForm();
+
+      if (!selection || selection.type === "file") {
+        // For file comments, insert at top of diff
+        showFileCommentForm();
+        return;
+      }
+
+      const tbody = document.getElementById("diffBody");
+      const afterIdx = selection.insertAfterIdx;
+
+      // Find the tr element with this idx, then insert after it (or after any comment threads following it)
+      const allRows = Array.from(tbody.querySelectorAll("tr"));
+      let insertAfterRow = null;
+      for (let i = 0; i < allRows.length; i++) {
+        const row = allRows[i];
+        if (row.classList.contains("diff-line") && parseInt(row.dataset.idx) === afterIdx) {
+          // Look ahead for comment threads that belong to this line
+          insertAfterRow = row;
+          for (let j = i + 1; j < allRows.length; j++) {
+            if (allRows[j].classList.contains("comment-thread")) {
+              insertAfterRow = allRows[j];
+            } else if (allRows[j].classList.contains("inline-form")) {
+              insertAfterRow = allRows[j];
+            } else {
+              break;
+            }
+          }
+          break;
+        }
+      }
+
+      const formRow = document.createElement("tr");
+      formRow.className = "inline-form";
+
+      let infoText;
+      if (selection.type === "range") {
+        infoText = `${selection.file}:${selection.startLine}\u2013${selection.endLine} (${selection.side})`;
       } else {
-        info.textContent = `${selection.file}:${selection.line} (${selection.side})`;
+        infoText = `${selection.file}:${selection.line} (${selection.side})`;
       }
 
-      document.getElementById("commentText").value = "";
-      document.getElementById("btnSubmit").disabled = true;
-      document.getElementById("commentText").focus();
+      formRow.innerHTML = `
+        <td colspan="3">
+          <div class="inline-comment-form">
+            <div class="form-connector"></div>
+            <div class="form-card">
+              <div class="selection-info">${escapeHtml(infoText)}</div>
+              <textarea id="inlineCommentText" placeholder="Write your review comment... (Ctrl+Enter to submit)"></textarea>
+              <div class="form-actions">
+                <button class="btn btn-secondary" id="inlineBtnCancel">Cancel</button>
+                <button class="btn btn-primary" id="inlineBtnSubmit" disabled>Comment</button>
+              </div>
+            </div>
+          </div>
+        </td>
+      `;
+
+      if (insertAfterRow && insertAfterRow.nextSibling) {
+        tbody.insertBefore(formRow, insertAfterRow.nextSibling);
+      } else if (insertAfterRow) {
+        tbody.appendChild(formRow);
+      } else {
+        // Fallback: append at end
+        tbody.appendChild(formRow);
+      }
+
+      // Scroll form into view
+      formRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      const textarea = formRow.querySelector("#inlineCommentText");
+      const submitBtn = formRow.querySelector("#inlineBtnSubmit");
+      const cancelBtn = formRow.querySelector("#inlineBtnCancel");
+
+      textarea.focus();
+
+      textarea.addEventListener("input", () => {
+        submitBtn.disabled = !textarea.value.trim();
+      });
+
+      textarea.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault();
+          submitInlineComment();
+        }
+      });
+
+      cancelBtn.addEventListener("click", clearSelection);
+      submitBtn.addEventListener("click", submitInlineComment);
     }
 
-    document.getElementById("commentText").addEventListener("input", (e) => {
-      document.getElementById("btnSubmit").disabled = !e.target.value.trim();
-    });
+    function showFileCommentForm() {
+      removeInlineForm();
 
-    document.getElementById("commentText").addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        submitComment();
+      const tbody = document.getElementById("diffBody");
+      const formRow = document.createElement("tr");
+      formRow.className = "inline-form";
+
+      formRow.innerHTML = `
+        <td colspan="3">
+          <div class="inline-comment-form">
+            <div class="form-connector"></div>
+            <div class="form-card">
+              <div class="selection-info">File comment: ${escapeHtml(selection.file)}</div>
+              <textarea id="inlineCommentText" placeholder="Write your file-level comment... (Ctrl+Enter to submit)"></textarea>
+              <div class="form-actions">
+                <button class="btn btn-secondary" id="inlineBtnCancel">Cancel</button>
+                <button class="btn btn-primary" id="inlineBtnSubmit" disabled>Comment</button>
+              </div>
+            </div>
+          </div>
+        </td>
+      `;
+
+      // Insert at the top, after any existing file-level comment threads
+      const firstNonCommentRow = tbody.querySelector("tr:not(.comment-thread):not(.inline-form):not(.hunk-header)");
+      if (firstNonCommentRow) {
+        tbody.insertBefore(formRow, firstNonCommentRow);
+      } else {
+        tbody.insertBefore(formRow, tbody.firstChild);
       }
-    });
 
-    document.getElementById("btnCancel").addEventListener("click", clearSelection);
+      formRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      const textarea = formRow.querySelector("#inlineCommentText");
+      const submitBtn = formRow.querySelector("#inlineBtnSubmit");
+      const cancelBtn = formRow.querySelector("#inlineBtnCancel");
+
+      textarea.focus();
+
+      textarea.addEventListener("input", () => {
+        submitBtn.disabled = !textarea.value.trim();
+      });
+
+      textarea.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault();
+          submitInlineComment();
+        }
+      });
+
+      cancelBtn.addEventListener("click", clearSelection);
+      submitBtn.addEventListener("click", submitInlineComment);
+    }
+
+    async function submitInlineComment() {
+      const textarea = document.querySelector("#inlineCommentText") || document.querySelector("#diffBody textarea");
+      if (!textarea || !textarea.value.trim() || !selection) return;
+
+      const text = textarea.value.trim();
+      const comment = {
+        file: selection.file,
+        side: selection.side,
+        type: selection.type,
+        line: selection.line,
+        startLine: selection.startLine,
+        endLine: selection.endLine,
+        codeSnippet: selection.codeSnippet,
+        text,
+      };
+
+      try {
+        const res = await fetch("/api/comments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(comment),
+        });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+        comments.push(data.comment);
+
+        clearSelection();
+        renderFileList();
+        renderDiff();
+        updateCommentCount();
+        showToast("Comment added");
+      } catch (e) {
+        console.error("Failed to submit comment:", e);
+        showToast("Failed to submit comment: " + e.message);
+      }
+    }
 
     document.getElementById("btnFileComment").addEventListener("click", () => {
       if (currentFileIndex < 0) return;
       const file = files[currentFileIndex];
+      const name = file.newName !== "/dev/null" ? file.newName : file.oldName;
       selection = {
-        file: file.newName !== "/dev/null" ? file.newName : file.oldName,
+        file: name,
         type: "file",
         side: null,
         line: undefined,
@@ -819,90 +1238,20 @@
         endLine: undefined,
         codeSnippet: "",
       };
-      showCommentForm();
+      showFileCommentForm();
     });
 
-    document.getElementById("btnSubmit").addEventListener("click", submitComment);
-
-    async function submitComment() {
-      const text = document.getElementById("commentText").value.trim();
-      if (!text || !selection) return;
-
-      const comment = { ...selection, text };
-      const res = await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(comment),
-      });
-      const data = await res.json();
-      comments.push(data.comment);
-
-      clearSelection();
-      renderFileList();
-      const name = files[currentFileIndex]?.newName !== "/dev/null" ? files[currentFileIndex]?.newName : files[currentFileIndex]?.oldName;
-      if (name) renderCommentsForFile(name);
-      updateCommentCount();
-      showToast("Comment added");
-    }
-
     async function loadComments() {
-      const res = await fetch("/api/comments");
-      const data = await res.json();
-      comments = data.comments;
-      renderFileList();
-      updateCommentCount();
-    }
-
-    function renderCommentsForFile(fileName) {
-      const list = document.getElementById("commentsList");
-      const empty = document.getElementById("commentsEmpty");
-      const fileComments = comments.filter(c => c.file === fileName);
-
-      if (fileComments.length === 0) {
-        list.innerHTML = "";
-        list.appendChild(empty);
-        empty.style.display = "flex";
-        return;
-      }
-
-      empty.style.display = "none";
-      list.innerHTML = "";
-
-      for (const c of fileComments) {
-        const card = document.createElement("div");
-        card.className = "comment-card";
-
-        let metaText = "";
-        if (c.type === "file") {
-          metaText = "File comment";
-        } else if (c.type === "range") {
-          metaText = `Lines ${c.startLine}\u2013${c.endLine} (${c.side})`;
-        } else {
-          metaText = `Line ${c.line} (${c.side})`;
-        }
-
-        card.innerHTML = `
-          <div class="comment-meta">
-            <span class="file-tag">${escapeHtml(c.file.split("/").pop())}</span>
-            ${metaText}
-          </div>
-          ${c.codeSnippet ? `<div class="comment-code">${escapeHtml(c.codeSnippet)}</div>` : ""}
-          <div class="comment-text">${escapeHtml(c.text)}</div>
-          <div class="comment-actions">
-            <button data-id="${c.id}" class="btn-delete">Delete</button>
-          </div>
-        `;
-
-        card.querySelector(".btn-delete").addEventListener("click", async () => {
-          await fetch(`/api/comments?id=${c.id}`, { method: "DELETE" });
-          comments = comments.filter(x => x.id !== c.id);
-          renderCommentsForFile(fileName);
-          renderFileList();
-          updateCommentCount();
-          showToast("Comment deleted");
-        });
-
-        list.appendChild(card);
+      try {
+        const res = await fetch("/api/comments");
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+        comments = data.comments;
+        renderFileList();
+        updateCommentCount();
+      } catch (e) {
+        console.error("Failed to load comments:", e);
+        showToast("Failed to load comments: " + e.message);
       }
     }
 
@@ -913,10 +1262,16 @@
     }
 
     document.getElementById("btnExport").addEventListener("click", async () => {
-      const res = await fetch("/api/export", { method: "POST" });
-      const data = await res.json();
-      document.getElementById("exportContent").textContent = data.markdown;
-      document.getElementById("exportModal").classList.add("show");
+      try {
+        const res = await fetch("/api/export", { method: "POST" });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+        document.getElementById("exportContent").textContent = data.markdown;
+        document.getElementById("exportModal").classList.add("show");
+      } catch (e) {
+        console.error("Failed to export:", e);
+        showToast("Failed to export: " + e.message);
+      }
     });
 
     document.getElementById("btnCopyExport").addEventListener("click", async () => {
@@ -955,16 +1310,36 @@
     }
 
     document.addEventListener("keydown", (e) => {
+      // Ignore if user is typing in a text field
+      if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
+
       if (e.key === "Escape") {
         if (document.getElementById("exportModal").classList.contains("show")) {
           document.getElementById("exportModal").classList.remove("show");
         } else {
           clearSelection();
         }
+        return;
+      }
+
+      // File list keyboard navigation
+      if ((e.key === "j" || e.key === "ArrowDown") && files.length > 0) {
+        e.preventDefault();
+        const nextIdx = Math.min(currentFileIndex + 1, files.length - 1);
+        if (nextIdx !== currentFileIndex) selectFile(nextIdx);
+        return;
+      }
+
+      if ((e.key === "k" || e.key === "ArrowUp") && files.length > 0) {
+        e.preventDefault();
+        const prevIdx = Math.max(currentFileIndex - 1, 0);
+        if (prevIdx !== currentFileIndex) selectFile(prevIdx);
+        return;
       }
     });
 
     init();
+    })();
   </script>
 </body>
 </html>

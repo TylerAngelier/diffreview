@@ -2,18 +2,16 @@ import { createServer as httpCreate } from "http";
 import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import crypto from "crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB
 
 export function createServer(files, projectName) {
   const comments = [];
-  let resolveClose;
 
   const app = httpCreate(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
-
-    // CORS for Monaco CDN
-    res.setHeader("Access-Control-Allow-Origin", "*");
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -45,9 +43,49 @@ export function createServer(files, projectName) {
       }
 
       if (url.pathname === "/api/comments" && req.method === "POST") {
-        const body = await readBody(req);
-        const comment = JSON.parse(body);
-        comment.id = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+        const contentType = req.headers["content-type"];
+        if (!contentType || !contentType.includes("application/json")) {
+          res.writeHead(415, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Content-Type must be application/json" }));
+          return;
+        }
+
+        let body;
+        try {
+          body = await readBody(req);
+        } catch (e) {
+          res.writeHead(413, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: e.message }));
+          return;
+        }
+
+        let comment;
+        try {
+          comment = JSON.parse(body);
+        } catch (e) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid JSON" }));
+          return;
+        }
+
+        // Validate required fields
+        if (!comment.file || typeof comment.file !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid 'file' field" }));
+          return;
+        }
+        if (!comment.text || typeof comment.text !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid 'text' field" }));
+          return;
+        }
+        if (!comment.type || !["line", "range", "file"].includes(comment.type)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid 'type' field (must be 'line', 'range', or 'file')" }));
+          return;
+        }
+
+        comment.id = crypto.randomUUID();
         comments.push(comment);
         res.writeHead(201, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ comment }));
@@ -57,9 +95,14 @@ export function createServer(files, projectName) {
       if (url.pathname === "/api/comments" && req.method === "DELETE") {
         const id = url.searchParams.get("id");
         const idx = comments.findIndex((c) => c.id === id);
-        if (idx !== -1) comments.splice(idx, 1);
+        if (idx === -1) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Comment not found" }));
+          return;
+        }
+        comments.splice(idx, 1);
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ comments }));
+        res.end(JSON.stringify({ success: true, id }));
         return;
       }
 
@@ -87,7 +130,6 @@ export function createServer(files, projectName) {
         url,
         close: () => {
           app.close();
-          if (resolveClose) resolveClose();
         },
       });
     });
@@ -97,7 +139,16 @@ export function createServer(files, projectName) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on("data", (c) => chunks.push(c));
+    let size = 0;
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error("Request body exceeds 1MB limit"));
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks).toString()));
     req.on("error", reject);
   });

@@ -3,7 +3,7 @@
 import { Command } from "commander";
 import { createServer } from "./server.js";
 import { parseDiff } from "./diff-parser.js";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { existsSync } from "fs";
 import { resolve, basename } from "path";
 import opener from "open";
@@ -28,25 +28,26 @@ program
     let diffOutput;
     try {
       if (opts.branch) {
-        diffOutput = execSync(`git diff ${opts.branch}`, {
+        diffOutput = execFileSync("git", ["diff", opts.branch], {
           cwd,
           encoding: "utf-8",
           maxBuffer: 50 * 1024 * 1024,
         });
       } else if (ref) {
-        diffOutput = execSync(`git diff ${ref}`, {
+        diffOutput = execFileSync("git", ["diff", ref], {
           cwd,
           encoding: "utf-8",
           maxBuffer: 50 * 1024 * 1024,
         });
       } else {
-        diffOutput = execSync("git diff --cached", {
+        diffOutput = execFileSync("git", ["diff", "--cached"], {
           cwd,
           encoding: "utf-8",
           maxBuffer: 50 * 1024 * 1024,
         });
         if (!diffOutput.trim()) {
-          diffOutput = execSync("git diff", {
+          console.log("No staged changes, falling back to unstaged changes.");
+          diffOutput = execFileSync("git", ["diff"], {
             cwd,
             encoding: "utf-8",
             maxBuffer: 50 * 1024 * 1024,
