@@ -25,6 +25,14 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    button:focus-visible,
+    .file-item:focus-visible,
+    .tree-item:focus-visible,
+    .line-num:focus-visible {
+      outline: 2px solid #1f6feb;
+      outline-offset: 1px;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
@@ -69,6 +77,21 @@
       overflow-y: auto;
       padding: 8px;
     }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12.5px;
+      gap: 6px;
+      color: var(--text-dim);
+      user-select: none;
+    }
+
+    .tree-item:hover { background: var(--hover); color: var(--text); }
+    .tree-item .twisty { width: 10px; text-align: center; }
 
     .file-item {
       display: flex;
@@ -168,11 +191,35 @@
     .toolbar .hint {
       font-size: 11px;
       color: var(--text-dim);
+    }
+
+    .view-toggle {
       margin-left: auto;
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--surface2);
+    }
+
+    .view-toggle button {
+      min-height: 30px;
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .view-toggle button.active {
+      background: var(--border);
+      color: var(--text);
     }
 
     .toolbar .btn-file-comment {
-      padding: 4px 10px;
+      min-height: 30px;
+      padding: 6px 12px;
       background: var(--border);
       color: var(--text);
       border: none;
@@ -214,15 +261,15 @@
     }
 
     .diff-line {
-      border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+      border-bottom: 1px solid rgba(49, 50, 68, 0.35);
     }
 
-    .diff-line:hover { background: rgba(69, 71, 90, 0.4); }
-    .diff-line.insert { background: rgba(166, 227, 161, 0.08); }
-    .diff-line.insert:hover { background: rgba(166, 227, 161, 0.15); }
-    .diff-line.delete { background: rgba(243, 139, 168, 0.08); }
-    .diff-line.delete:hover { background: rgba(243, 139, 168, 0.15); }
-    .diff-line.selecting { background: rgba(137, 180, 250, 0.15) !important; }
+    .diff-line:hover { background: rgba(105, 122, 151, 0.14); }
+    .diff-line.insert { background: rgba(46, 160, 67, 0.16); }
+    .diff-line.insert:hover { background: rgba(46, 160, 67, 0.24); }
+    .diff-line.delete { background: rgba(248, 81, 73, 0.16); }
+    .diff-line.delete:hover { background: rgba(248, 81, 73, 0.24); }
+    .diff-line.selecting { outline: 1px solid var(--accent); background: rgba(137, 180, 250, 0.2) !important; }
 
     .diff-line td {
       padding: 0 12px;
@@ -236,12 +283,45 @@
       text-align: right;
       color: var(--text-dim);
       user-select: none;
-      padding-right: 8px;
+      padding-right: 10px;
       cursor: pointer;
       position: relative;
+      overflow: visible;
     }
 
     .diff-line .line-num:hover { color: var(--accent); }
+
+    .line-num .line-add-comment {
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 16px;
+      padding: 0;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s ease;
+    }
+
+    .diff-line:hover .line-num .line-add-comment,
+    .line-num .line-add-comment:focus-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .line-num .line-add-comment:hover {
+      background: var(--accent);
+      color: var(--surface);
+      border-color: var(--accent);
+    }
 
     /* Gutter comment indicator */
     .diff-line.has-comment .line-num::after {
@@ -258,6 +338,32 @@
 
     .diff-line .line-content {
       width: 100%;
+      min-width: 280px;
+    }
+
+    .diff-line .line-content-old,
+    .diff-line .line-content-new {
+      width: 50%;
+      min-width: 280px;
+    }
+
+    body.mode-split .line-content-old,
+    body.mode-split .line-content-new {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    body.mode-split .line-content-unified,
+    body.mode-split .th-unified {
+      display: none;
+    }
+
+    body.mode-unified .line-content-old,
+    body.mode-unified .line-content-new,
+    body.mode-unified .th-old-content,
+    body.mode-unified .th-new-content {
+      display: none;
     }
 
     .diff-line .prefix {
@@ -271,180 +377,231 @@
     .diff-line.delete .prefix { color: var(--red); }
 
     .hunk-header {
-      background: var(--surface);
-      color: var(--accent);
+      background: rgba(111, 66, 193, 0.15);
+      color: #c9d1d9;
       font-size: 12px;
       user-select: none;
     }
 
-    .hunk-header td { padding: 4px 12px; }
+    .hunk-header td { padding: 6px 12px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 
     /* Inline comment thread row */
-    .comment-thread td {
-      padding: 0;
-      background: var(--bg);
-    }
-
-    .inline-comment {
-      display: flex;
-      padding: 8px 16px 12px 40px;
-      gap: 0;
-    }
-
-    .comment-connector {
-      width: 28px;
-      min-width: 28px;
-      border-left: 2px solid var(--accent);
-      margin-left: 24px;
-      border-bottom-left-radius: 6px;
-      opacity: 0.6;
-    }
-
-    .comment-card {
-      flex: 1;
-      background: var(--comment-bg);
-      border-radius: 8px;
-      padding: 10px 14px;
-      max-width: 720px;
-    }
-
-    .comment-card .comment-meta {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-
-    .comment-card .comment-meta .file-tag {
-      background: var(--border);
-      padding: 1px 6px;
-      border-radius: 3px;
-      font-size: 10px;
-    }
-
-    .comment-card .comment-code {
-      font-family: 'SF Mono', 'Cascadia Code', monospace;
-      font-size: 11px;
-      background: var(--surface2);
-      padding: 6px 8px;
-      border-radius: 4px;
-      margin-bottom: 6px;
-      color: var(--yellow);
-      overflow-x: auto;
-      white-space: pre;
-      max-height: 120px;
-      overflow-y: auto;
-    }
-
-    .comment-card .comment-text {
-      font-size: 13px;
-      line-height: 1.5;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-
-    .comment-card .comment-actions {
-      margin-top: 6px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .comment-card .comment-actions button {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 11px;
-      padding: 2px 4px;
-    }
-
-    .comment-card .comment-actions button:hover { color: var(--red); }
-
-    /* Stacked comments in a thread */
-    .comment-card + .comment-card {
-      margin-top: 6px;
-      border-top: 1px solid var(--border);
-      padding-top: 8px;
-    }
-
-    /* Inline comment form */
+    .comment-thread td,
     .inline-form td {
       padding: 0;
       background: var(--bg);
     }
 
+    .inline-comment,
     .inline-comment-form {
       display: flex;
-      padding: 8px 16px 12px 40px;
-      gap: 0;
+      padding: 12px 16px 14px 34px;
+      gap: 10px;
     }
 
+    .comment-connector,
     .form-connector {
-      width: 28px;
-      min-width: 28px;
-      border-left: 2px solid var(--accent);
-      margin-left: 24px;
-      border-bottom-left-radius: 6px;
-      opacity: 0.6;
+      width: 18px;
+      min-width: 18px;
+      border-left: 2px solid #57606a;
+      margin-left: 16px;
+      border-bottom-left-radius: 8px;
+      opacity: 0.8;
     }
 
-    .form-card {
+    .thread-wrap,
+    .form-wrap {
       flex: 1;
-      background: var(--comment-bg);
-      border-radius: 8px;
-      padding: 10px 14px;
-      max-width: 720px;
+      max-width: 860px;
     }
+
+    .comment-card,
+    .form-card {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .comment-card + .comment-card {
+      margin-top: 10px;
+    }
+
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .comment-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #238636;
+      color: #f0f6fc;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .comment-author {
+      color: #c9d1d9;
+      font-weight: 600;
+    }
+
+    .comment-location {
+      margin-left: auto;
+      font-size: 11px;
+      color: #8b949e;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 999px;
+      padding: 1px 8px;
+    }
+
+    .comment-code {
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
+      font-size: 11px;
+      background: #161b22;
+      color: #c9d1d9;
+      margin: 10px 12px 0;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 170px;
+      overflow-y: auto;
+    }
+
+    .comment-text {
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #c9d1d9;
+    }
+
+    .comment-actions {
+      padding: 0 12px 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .comment-actions button {
+      background: transparent;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 11px;
+      border-radius: 6px;
+      padding: 3px 8px;
+    }
+
+    .comment-actions button:hover { color: #f85149; border-color: #f85149; }
 
     .form-card .selection-info {
       font-size: 11px;
-      color: var(--accent);
-      margin-bottom: 8px;
-      padding: 4px 8px;
-      background: var(--surface2);
-      border-radius: 4px;
+      color: #8b949e;
+      padding: 8px 12px;
+      border-bottom: 1px solid #30363d;
+      background: #161b22;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .form-card textarea {
-      width: 100%;
-      min-height: 60px;
-      background: var(--bg);
-      color: var(--text);
-      border: 1px solid var(--border);
+      width: calc(100% - 24px);
+      margin: 12px;
+      min-height: 78px;
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
       border-radius: 6px;
-      padding: 8px 10px;
+      padding: 10px;
       font-size: 13px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       resize: vertical;
       outline: none;
     }
 
-    .form-card textarea:focus { border-color: var(--accent); }
+    .form-card textarea:focus { border-color: #1f6feb; }
 
     .form-card .form-actions {
       display: flex;
       gap: 8px;
-      margin-top: 8px;
+      justify-content: flex-end;
+      margin: 0 12px 12px;
     }
 
-    .form-card .btn {
+    .btn {
       padding: 5px 12px;
-      border-radius: 5px;
-      border: none;
+      border-radius: 6px;
+      border: 1px solid #30363d;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
     }
 
-    .btn-primary { background: var(--accent); color: var(--surface); }
-    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary { background: #238636; color: #f0f6fc; border-color: #2ea043; }
+    .btn-primary:hover { filter: brightness(1.05); }
     .btn-primary:disabled { opacity: 0.4; cursor: default; }
 
-    .btn-secondary { background: var(--border); color: var(--text); }
-    .btn-secondary:hover { background: var(--hover); }
+    .btn-secondary { background: #21262d; color: #c9d1d9; }
+    .btn-secondary:hover { background: #30363d; }
+
+    .review-bar {
+      border-top: 1px solid var(--border);
+      background: #0d1117;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      bottom: 0;
+      z-index: 25;
+    }
+
+    .review-summary {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .review-summary strong { color: #c9d1d9; }
+
+    .review-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    @media (max-width: 980px) {
+      .sidebar {
+        width: 230px;
+        min-width: 230px;
+      }
+
+      .toolbar {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+
+      .view-toggle {
+        margin-left: 0;
+      }
+
+      .toolbar .hint {
+        width: 100%;
+        order: 10;
+      }
+    }
 
     .modal-overlay {
       display: none;
@@ -552,7 +709,7 @@
     ::-webkit-scrollbar-thumb:hover { background: var(--hover); }
   </style>
 </head>
-<body>
+<body class="mode-split">
   <div class="layout">
     <div class="sidebar">
       <div class="sidebar-header">
@@ -570,7 +727,11 @@
     <div class="main">
       <div class="toolbar">
         <span class="file-name" id="currentFile">Select a file</span>
-        <span class="hint" id="hint">Click or shift-click lines to comment</span>
+        <div class="view-toggle" id="viewToggle">
+          <button id="btnSplitView" class="active" type="button">Side-by-side</button>
+          <button id="btnUnifiedView" type="button">Unified</button>
+        </div>
+        <span class="hint" id="hint">Hover line numbers and click + to comment</span>
         <button class="btn-file-comment" id="btnFileComment" style="display:none">File comment</button>
       </div>
       <div class="diff-container" id="diffContainer">
@@ -583,13 +744,22 @@
         <table class="diff-table" id="diffTable" style="display:none">
           <thead>
             <tr>
-              <th class="line-num" style="width:50px">-</th>
-              <th class="line-num" style="width:50px">+</th>
-              <th></th>
+              <th class="line-num" style="width:50px">Old</th>
+              <th class="th-old-content">Old code</th>
+              <th class="line-num" style="width:50px">New</th>
+              <th class="th-new-content">New code</th>
+              <th class="th-unified">Diff</th>
             </tr>
           </thead>
           <tbody id="diffBody"></tbody>
         </table>
+      </div>
+      <div class="review-bar" id="reviewBar">
+        <span class="review-summary"><strong id="pendingCount">0</strong> <span id="pendingLabel">pending comments</span></span>
+        <div class="review-actions">
+          <button class="btn btn-secondary" id="btnReviewCancel">Dismiss draft</button>
+          <button class="btn btn-primary" id="btnSubmitReview" disabled>Submit review</button>
+        </div>
       </div>
     </div>
   </div>
@@ -621,6 +791,7 @@
     let currentFileIndex = -1;
     let selection = null;
     let lastClickedIdx = null;
+    let viewMode = "split";
 
     // Track line index -> (side, lineNum) mapping for comment placement
     let lineMap = [];
@@ -632,6 +803,7 @@
         const data = await safeJson(res);
         files = data.files;
         document.getElementById("projectName").textContent = data.projectName;
+        setViewMode("split", false);
         renderFileList();
         await loadComments();
       } catch (e) {
@@ -640,27 +812,106 @@
       }
     }
 
+    function setViewMode(mode, rerender = true) {
+      viewMode = mode === "unified" ? "unified" : "split";
+      document.body.classList.toggle("mode-split", viewMode === "split");
+      document.body.classList.toggle("mode-unified", viewMode === "unified");
+      document.getElementById("btnSplitView").classList.toggle("active", viewMode === "split");
+      document.getElementById("btnUnifiedView").classList.toggle("active", viewMode === "unified");
+      if (rerender && currentFileIndex >= 0) {
+        renderDiff();
+      }
+    }
+
+    const expandedDirs = new Set([""]);
+
     function renderFileList() {
       const list = document.getElementById("fileList");
       list.innerHTML = "";
-      files.forEach((file, i) => {
-        const div = document.createElement("div");
-        div.className = "file-item" + (i === currentFileIndex ? " active" : "");
+
+      const tree = buildFileTree();
+      renderTreeLevel(list, tree, "", 0);
+    }
+
+    function buildFileTree() {
+      const root = { dirs: new Map(), files: [] };
+
+      files.forEach((file, index) => {
         const name = file.newName !== "/dev/null" ? file.newName : file.oldName;
+        const parts = name.split("/");
+        let node = root;
+
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i];
+          if (!node.dirs.has(part)) {
+            node.dirs.set(part, { dirs: new Map(), files: [] });
+          }
+          node = node.dirs.get(part);
+        }
+
+        node.files.push({ index, file, name, base: parts[parts.length - 1] });
+      });
+
+      return root;
+    }
+
+    function renderTreeLevel(parentEl, node, basePath, depth) {
+      const dirs = Array.from(node.dirs.keys()).sort((a, b) => a.localeCompare(b));
+      const filesHere = node.files.sort((a, b) => a.base.localeCompare(b.base));
+
+      for (const dir of dirs) {
+        const path = basePath ? `${basePath}/${dir}` : dir;
+        const isExpanded = expandedDirs.has(path);
+        const row = document.createElement("div");
+        row.className = "tree-item dir-item";
+        row.style.paddingLeft = `${10 + depth * 14}px`;
+        row.tabIndex = 0;
+        row.innerHTML = `<span class="twisty">${isExpanded ? "▾" : "▸"}</span><span class="name">${escapeHtml(dir)}</span>`;
+        const toggleDir = () => {
+          if (isExpanded) expandedDirs.delete(path);
+          else expandedDirs.add(path);
+          renderFileList();
+        };
+        row.addEventListener("click", toggleDir);
+        row.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleDir();
+          }
+        });
+        parentEl.appendChild(row);
+
+        if (isExpanded) {
+          renderTreeLevel(parentEl, node.dirs.get(dir), path, depth + 1);
+        }
+      }
+
+      for (const entry of filesHere) {
+        const { index, file, name, base } = entry;
+        const div = document.createElement("div");
+        div.className = "file-item" + (index === currentFileIndex ? " active" : "");
+        div.style.paddingLeft = `${20 + depth * 14}px`;
+        div.tabIndex = 0;
         const icon = file.deleted ? "\u2716" : file.added ? "\u271A" : "\u270E";
         const commentCount = comments.filter(c => c.file === name).length;
         div.innerHTML = `
           <span class="icon">${icon}</span>
-          <span class="name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+          <span class="name" title="${escapeHtml(name)}">${escapeHtml(base)}</span>
           <span class="stats">
             <span class="stat-add">+${file.stats.additions}</span>
             <span class="stat-del">-${file.stats.deletions}</span>
           </span>
           ${commentCount ? `<span class="comment-badge">${commentCount}</span>` : ""}
         `;
-        div.addEventListener("click", () => selectFile(i));
-        list.appendChild(div);
-      });
+        div.addEventListener("click", () => selectFile(index));
+        div.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectFile(index);
+          }
+        });
+        parentEl.appendChild(div);
+      }
     }
 
     function selectFile(index) {
@@ -671,7 +922,7 @@
       renderDiff();
       const name = files[index].newName !== "/dev/null" ? files[index].newName : files[index].oldName;
       document.getElementById("currentFile").textContent = name;
-      document.getElementById("hint").textContent = "Click or shift-click lines to comment";
+      document.getElementById("hint").textContent = "Hover line numbers and click +, or drag to select a range";
       document.getElementById("btnFileComment").style.display = "";
     }
 
@@ -802,41 +1053,77 @@
       for (const hunk of file.hunks) {
         const hunkRow = document.createElement("tr");
         hunkRow.className = "hunk-header";
-        hunkRow.innerHTML = `<td colspan="3">${escapeHtml(hunk.header)}</td>`;
+        hunkRow.innerHTML = `<td colspan="5">${escapeHtml(hunk.header)}</td>`;
         tbody.appendChild(hunkRow);
 
         for (const line of hunk.lines) {
+          const lineIdx = idx;
           const tr = document.createElement("tr");
           tr.className = "diff-line " + (line.type === "insert" ? "insert" : line.type === "delete" ? "delete" : "");
-          tr.dataset.idx = idx;
+          tr.dataset.idx = lineIdx;
           tr.dataset.type = line.type;
           tr.dataset.oldNum = line.oldNumber ?? "";
           tr.dataset.newNum = line.newNumber ?? "";
+          tr.dataset.content = line.content ?? "";
 
           // Check if this line index has comments (for gutter indicator)
           // We'll add this class after building the full lineMap
 
           const prefix = line.type === "insert" ? "+" : line.type === "delete" ? "-" : " ";
 
+          const oldContent = line.type === "insert" ? "" : escapeHtml(line.content);
+          const newContent = line.type === "delete" ? "" : escapeHtml(line.content);
+
+          const oldNum = line.oldNumber ?? "";
+          const newNum = line.newNumber ?? "";
+          const oldBtn = oldNum !== "" ? `<button class="line-add-comment" data-side="old" aria-label="Add comment on left line ${oldNum}" title="Add comment">+</button>` : "";
+          const newBtn = newNum !== "" ? `<button class="line-add-comment" data-side="new" aria-label="Add comment on right line ${newNum}" title="Add comment">+</button>` : "";
+
+          const oldAttrs = oldNum !== "" ? `tabindex="0" role="button" aria-label="Select left line ${oldNum}"` : "";
+          const newAttrs = newNum !== "" ? `tabindex="0" role="button" aria-label="Select right line ${newNum}"` : "";
+
           tr.innerHTML = `
-            <td class="line-num">${line.oldNumber ?? ""}</td>
-            <td class="line-num">${line.newNumber ?? ""}</td>
-            <td class="line-content"><span class="prefix">${prefix}</span>${escapeHtml(line.content)}</td>
+            <td class="line-num" data-side="old" ${oldAttrs}>${oldNum}${oldBtn}</td>
+            <td class="line-content line-content-old">${oldContent}</td>
+            <td class="line-num" data-side="new" ${newAttrs}>${newNum}${newBtn}</td>
+            <td class="line-content line-content-new">${newContent}</td>
+            <td class="line-content line-content-unified"><span class="prefix">${prefix}</span>${escapeHtml(line.content)}</td>
           `;
+
+          tr.addEventListener("click", (e) => {
+            if (e.target.closest("button, textarea, .comment-card")) return;
+            onLineClick(e, lineIdx);
+          });
+
+          tr.querySelectorAll(".line-add-comment").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              startCommentOnLine(lineIdx, btn.dataset.side);
+            });
+          });
 
           const nums = tr.querySelectorAll(".line-num");
           nums.forEach(td => {
             td.addEventListener("click", (e) => {
               e.preventDefault();
-              onLineClick(e, idx);
+              e.stopPropagation();
+              onLineClick(e, lineIdx);
+            });
+            td.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                startCommentOnLine(lineIdx, td.dataset.side);
+              }
             });
             td.addEventListener("mousedown", (e) => {
               if (e.shiftKey) return;
               if (e.button !== 0) return;
+              if (e.target.closest(".line-add-comment")) return;
               e.preventDefault();
               isDragging = true;
-              dragStartIdx = idx;
-              updateSelectionHighlight(idx, idx);
+              dragStartIdx = lineIdx;
+              updateSelectionHighlight(lineIdx, lineIdx);
               updateSelectionFromHighlight();
             });
           });
@@ -887,20 +1174,20 @@
 
       let cardsHtml = "";
       for (const c of threadComments) {
-        let metaText = "";
-        if (c.type === "file") {
-          metaText = "File comment";
-        } else if (c.type === "range") {
-          metaText = `Lines ${c.startLine}\u2013${c.endLine} (${c.side})`;
-        } else {
-          metaText = `Line ${c.line} (${c.side})`;
+        let locationText = "File";
+        if (c.type === "range") {
+          locationText = `${c.side === "old" ? "L" : "R"}${c.startLine}\u2013${c.endLine}`;
+        } else if (c.type === "line") {
+          locationText = `${c.side === "old" ? "L" : "R"}${c.line}`;
         }
 
         cardsHtml += `
           <div class="comment-card" data-comment-id="${c.id}">
-            <div class="comment-meta">
-              <span class="file-tag">${escapeHtml(fileName.split("/").pop())}</span>
-              ${metaText}
+            <div class="comment-header">
+              <span class="comment-avatar">DR</span>
+              <span class="comment-author">reviewer</span>
+              <span>commented ${escapeHtml(formatTimeAgo(c.createdAt))}</span>
+              <span class="comment-location">${escapeHtml(locationText)}</span>
             </div>
             ${c.codeSnippet ? `<div class="comment-code">${escapeHtml(c.codeSnippet)}</div>` : ""}
             <div class="comment-text">${escapeHtml(c.text)}</div>
@@ -912,10 +1199,10 @@
       }
 
       tr.innerHTML = `
-        <td colspan="3">
+        <td colspan="5">
           <div class="inline-comment">
             <div class="comment-connector"></div>
-            <div>
+            <div class="thread-wrap">
               ${cardsHtml}
             </div>
           </div>
@@ -958,6 +1245,46 @@
       }
     }
 
+    function startCommentOnLine(idx, preferredSide) {
+      clearSelection();
+      const row = document.querySelector(`#diffBody tr.diff-line[data-idx="${idx}"]`);
+      if (!row) return;
+
+      lastClickedIdx = idx;
+      row.classList.add("selecting");
+
+      const rowSide = row.dataset.type === "delete" ? "old" : row.dataset.type === "insert" ? "new" : null;
+      const side = preferredSide || rowSide;
+      if (side !== "old" && side !== "new") {
+        updateSelectionFromHighlight();
+        return;
+      }
+
+      const numField = side === "old" ? "oldNum" : "newNum";
+      const lineNumber = parseInt(row.dataset[numField], 10);
+      if (!Number.isInteger(lineNumber)) {
+        updateSelectionFromHighlight();
+        return;
+      }
+
+      const file = files[currentFileIndex];
+      if (!file) return;
+      const name = file.newName !== "/dev/null" ? file.newName : file.oldName;
+
+      selection = {
+        file: name,
+        side,
+        type: "line",
+        line: lineNumber,
+        startLine: undefined,
+        endLine: undefined,
+        codeSnippet: (side === "new" ? "+" : "-") + (row.dataset.content ?? ""),
+        insertAfterIdx: idx,
+      };
+
+      showInlineForm();
+    }
+
     document.getElementById("diffBody").addEventListener("mouseover", (e) => {
       if (!isDragging) return;
       const tr = e.target.closest("tr.diff-line");
@@ -988,29 +1315,32 @@
       const file = files[currentFileIndex];
       if (!file) return;
 
-      const selectedRows = document.querySelectorAll(".diff-line.selecting");
+      const selectedRows = Array.from(document.querySelectorAll(".diff-line.selecting"));
       if (selectedRows.length === 0) return;
 
-      const selectedLines = [];
-      let side = null;
+      const changedRows = selectedRows.filter(tr => tr.dataset.type !== "context");
+      if (changedRows.length === 0) {
+        return;
+      }
 
-      selectedRows.forEach(tr => {
-        const type = tr.dataset.type;
-        if (type !== "context") {
-          selectedLines.push({ type, content: tr.dataset.content });
-          const s = type === "delete" ? "old" : "new";
-          if (side === null) side = s;
-        }
+      const side = changedRows[0].dataset.type === "delete" ? "old" : "new";
+      const sameSideRows = changedRows.filter(tr => {
+        const s = tr.dataset.type === "delete" ? "old" : "new";
+        return s === side;
       });
 
-      if (selectedLines.length === 0) return;
+      if (sameSideRows.length === 0) return;
 
       const numField = side === "old" ? "oldNum" : "newNum";
-      const firstNum = parseInt(selectedRows[0].dataset[numField]);
-      const lastNum = parseInt(selectedRows[selectedRows.length - 1].dataset[numField]);
+      const firstNum = parseInt(sameSideRows[0].dataset[numField], 10);
+      const lastNum = parseInt(sameSideRows[sameSideRows.length - 1].dataset[numField], 10);
 
-      const codeSnippet = selectedLines
-        .map(l => (l.type === "insert" ? "+" : l.type === "delete" ? "-" : " ") + l.content)
+      if (!Number.isInteger(firstNum) || !Number.isInteger(lastNum)) {
+        return;
+      }
+
+      const codeSnippet = sameSideRows
+        .map(tr => (tr.dataset.type === "insert" ? "+" : "-") + (tr.dataset.content ?? ""))
         .join("\n");
 
       const name = file.newName !== "/dev/null" ? file.newName : file.oldName;
@@ -1018,12 +1348,12 @@
       selection = {
         file: name,
         side,
-        type: selectedLines.length === 1 ? "line" : "range",
-        line: selectedLines.length === 1 ? firstNum : undefined,
-        startLine: selectedLines.length > 1 ? firstNum : undefined,
-        endLine: selectedLines.length > 1 ? lastNum : undefined,
+        type: sameSideRows.length === 1 ? "line" : "range",
+        line: sameSideRows.length === 1 ? firstNum : undefined,
+        startLine: sameSideRows.length > 1 ? firstNum : undefined,
+        endLine: sameSideRows.length > 1 ? lastNum : undefined,
         codeSnippet,
-        insertAfterIdx: parseInt(selectedRows[selectedRows.length - 1].dataset.idx),
+        insertAfterIdx: parseInt(sameSideRows[sameSideRows.length - 1].dataset.idx, 10),
       };
 
       showInlineForm();
@@ -1086,15 +1416,18 @@
       }
 
       formRow.innerHTML = `
-        <td colspan="3">
+        <td colspan="5">
           <div class="inline-comment-form">
             <div class="form-connector"></div>
-            <div class="form-card">
-              <div class="selection-info">${escapeHtml(infoText)}</div>
-              <textarea id="inlineCommentText" placeholder="Write your review comment... (Ctrl+Enter to submit)"></textarea>
-              <div class="form-actions">
-                <button class="btn btn-secondary" id="inlineBtnCancel">Cancel</button>
-                <button class="btn btn-primary" id="inlineBtnSubmit" disabled>Comment</button>
+            <div class="form-wrap">
+              <div class="form-card">
+                <div class="selection-info">${escapeHtml(infoText)}</div>
+                <textarea id="inlineCommentText" placeholder="Leave a comment"></textarea>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" id="inlineBtnCancel">Cancel</button>
+                  <button class="btn btn-secondary" id="inlineBtnReview" disabled>Start review</button>
+                  <button class="btn btn-primary" id="inlineBtnSubmit" disabled>Add single comment</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1115,23 +1448,27 @@
 
       const textarea = formRow.querySelector("#inlineCommentText");
       const submitBtn = formRow.querySelector("#inlineBtnSubmit");
+      const reviewBtn = formRow.querySelector("#inlineBtnReview");
       const cancelBtn = formRow.querySelector("#inlineBtnCancel");
 
       textarea.focus();
 
       textarea.addEventListener("input", () => {
-        submitBtn.disabled = !textarea.value.trim();
+        const hasText = !!textarea.value.trim();
+        submitBtn.disabled = !hasText;
+        reviewBtn.disabled = !hasText;
       });
 
       textarea.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
           e.preventDefault();
-          submitInlineComment();
+          submitInlineComment("single");
         }
       });
 
       cancelBtn.addEventListener("click", clearSelection);
-      submitBtn.addEventListener("click", submitInlineComment);
+      submitBtn.addEventListener("click", () => submitInlineComment("single"));
+      reviewBtn.addEventListener("click", () => submitInlineComment("review"));
     }
 
     function showFileCommentForm() {
@@ -1142,15 +1479,18 @@
       formRow.className = "inline-form";
 
       formRow.innerHTML = `
-        <td colspan="3">
+        <td colspan="5">
           <div class="inline-comment-form">
             <div class="form-connector"></div>
-            <div class="form-card">
-              <div class="selection-info">File comment: ${escapeHtml(selection.file)}</div>
-              <textarea id="inlineCommentText" placeholder="Write your file-level comment... (Ctrl+Enter to submit)"></textarea>
-              <div class="form-actions">
-                <button class="btn btn-secondary" id="inlineBtnCancel">Cancel</button>
-                <button class="btn btn-primary" id="inlineBtnSubmit" disabled>Comment</button>
+            <div class="form-wrap">
+              <div class="form-card">
+                <div class="selection-info">File comment: ${escapeHtml(selection.file)}</div>
+                <textarea id="inlineCommentText" placeholder="Leave a comment"></textarea>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" id="inlineBtnCancel">Cancel</button>
+                  <button class="btn btn-secondary" id="inlineBtnReview" disabled>Start review</button>
+                  <button class="btn btn-primary" id="inlineBtnSubmit" disabled>Add single comment</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1169,26 +1509,30 @@
 
       const textarea = formRow.querySelector("#inlineCommentText");
       const submitBtn = formRow.querySelector("#inlineBtnSubmit");
+      const reviewBtn = formRow.querySelector("#inlineBtnReview");
       const cancelBtn = formRow.querySelector("#inlineBtnCancel");
 
       textarea.focus();
 
       textarea.addEventListener("input", () => {
-        submitBtn.disabled = !textarea.value.trim();
+        const hasText = !!textarea.value.trim();
+        submitBtn.disabled = !hasText;
+        reviewBtn.disabled = !hasText;
       });
 
       textarea.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
           e.preventDefault();
-          submitInlineComment();
+          submitInlineComment("single");
         }
       });
 
       cancelBtn.addEventListener("click", clearSelection);
-      submitBtn.addEventListener("click", submitInlineComment);
+      submitBtn.addEventListener("click", () => submitInlineComment("single"));
+      reviewBtn.addEventListener("click", () => submitInlineComment("review"));
     }
 
-    async function submitInlineComment() {
+    async function submitInlineComment(mode = "single") {
       const textarea = document.querySelector("#inlineCommentText") || document.querySelector("#diffBody textarea");
       if (!textarea || !textarea.value.trim() || !selection) return;
 
@@ -1202,6 +1546,7 @@
         endLine: selection.endLine,
         codeSnippet: selection.codeSnippet,
         text,
+        createdAt: new Date().toISOString(),
       };
 
       try {
@@ -1218,7 +1563,7 @@
         renderFileList();
         renderDiff();
         updateCommentCount();
-        showToast("Comment added");
+        showToast(mode === "review" ? "Comment added to review" : "Comment added");
       } catch (e) {
         console.error("Failed to submit comment:", e);
         showToast("Failed to submit comment: " + e.message);
@@ -1241,6 +1586,14 @@
       showFileCommentForm();
     });
 
+    document.getElementById("btnSplitView").addEventListener("click", () => {
+      setViewMode("split");
+    });
+
+    document.getElementById("btnUnifiedView").addEventListener("click", () => {
+      setViewMode("unified");
+    });
+
     async function loadComments() {
       try {
         const res = await fetch("/api/comments");
@@ -1258,7 +1611,10 @@
     function updateCommentCount() {
       const count = comments.length;
       document.getElementById("commentCount").textContent = count;
+      document.getElementById("pendingCount").textContent = count;
+      document.getElementById("pendingLabel").textContent = count === 1 ? "pending comment" : "pending comments";
       document.getElementById("btnExport").disabled = count === 0;
+      document.getElementById("btnSubmitReview").disabled = count === 0;
     }
 
     document.getElementById("btnExport").addEventListener("click", async () => {
@@ -1272,6 +1628,15 @@
         console.error("Failed to export:", e);
         showToast("Failed to export: " + e.message);
       }
+    });
+
+    document.getElementById("btnSubmitReview").addEventListener("click", () => {
+      document.getElementById("btnExport").click();
+    });
+
+    document.getElementById("btnReviewCancel").addEventListener("click", () => {
+      clearSelection();
+      showToast("Draft form dismissed.");
     });
 
     document.getElementById("btnCopyExport").addEventListener("click", async () => {
@@ -1299,6 +1664,17 @@
       toast.textContent = msg;
       toast.classList.add("show");
       setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+
+    function formatTimeAgo(value) {
+      if (!value) return "just now";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "just now";
+      const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+      if (diff < 60) return "just now";
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
     }
 
     function escapeHtml(str) {
@@ -1331,6 +1707,12 @@
         } else {
           clearSelection();
         }
+        return;
+      }
+
+      if (e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        setViewMode(viewMode === "split" ? "unified" : "split");
         return;
       }
 
